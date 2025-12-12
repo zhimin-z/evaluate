@@ -1,6 +1,11 @@
 # Supported Evaluation Workflow Strategies
 
-This document outlines which strategies from the **Unified Evaluation Workflow** are natively supported by the HuggingFace `evaluate` library in its full installation. A strategy is considered "supported" only if it is provided out-of-the-box after installing the library—no custom modules or external integrations required.
+This document outlines which strategies from the **Unified Evaluation Workflow** are natively supported by the HuggingFace `evaluate` library in its full installation. 
+
+**Classification:**
+- ✅ **SUPPORTED**: Strategy is provided out-of-the-box after installing the library—no custom modules or external integrations required
+- ⚠️ **PARTIALLY SUPPORTED**: Some aspects of the strategy are natively supported, while others require custom implementation
+- ❌ **NOT SUPPORTED**: Strategy requires custom implementation or external tools
 
 **Note:** This harness is mentioned in the unified workflow as: *Evaluate*
 
@@ -109,8 +114,26 @@ The library does not provide production traffic sampling or real-time stream pro
 
 ### Step C: Benchmark Preparation (References)
 
-#### ❌ **Strategy 1: Judge Preparation** - **NOT SUPPORTED**
-While the library can load and use pre-trained models for evaluation, it does not provide native fine-tuning capabilities for judge models or reward models. Users must fine-tune judges externally.
+#### ⚠️ **Strategy 1: Judge Preparation** - **PARTIALLY SUPPORTED**
+The library supports **loading and configuring pre-trained judge models** through two mechanisms:
+
+1. **Model-based metrics**: Several metrics natively load pre-trained judge models:
+   - `bleurt`: Loads BLEURT checkpoints (e.g., `bleurt-base-128`, `BLEURT-20`)
+   - `comet`: Loads COMET models (e.g., `Unbabel/wmt20-comet-da`)
+   - `bertscore`: Loads BERT-based models for scoring
+   - `mauve`: Loads GPT-2 for text generation evaluation
+
+2. **Custom judge models**: Users can load any pre-trained model via the `Evaluator` class and use it as a judge:
+   ```python
+   # Load a pre-trained classifier/reward model as a judge
+   evaluator("text-classification").compute(
+       model_or_pipeline="your-judge-model",
+       data=test_data,
+       metric="accuracy"
+   )
+   ```
+
+**Not supported**: Fine-tuning discriminative models or reward models to create specialized judges. Users must fine-tune judges externally and then load them.
 
 #### ✅ **Strategy 2: Ground Truth Preparation** - **SUPPORTED**
 The library's dataset integration inherently loads ground truth labels and references as part of benchmark datasets. The `prepare_data()` method in evaluators extracts references from datasets:
@@ -192,8 +215,24 @@ The library includes embedding-based metrics that require transformation into le
 - **`mauve`**: Uses embeddings for text generation evaluation
 - **`bleurt`**: Learned metric using BERT-based embeddings
 
-#### ❌ **Strategy 3: Subjective Measurement** - **NOT SUPPORTED**
-While the library can load models that could be used as judges, it does not provide native LLM-as-a-judge functionality or frameworks for subjective evaluation. Users must implement subjective evaluation logic externally.
+#### ⚠️ **Strategy 3: Subjective Measurement** - **PARTIALLY SUPPORTED**
+The library supports using pre-trained models as judges through model-based metrics, but does not provide a comprehensive LLM-as-a-judge framework.
+
+**Supported approaches:**
+1. **Model-based metrics for subjective qualities**: Several metrics use pre-trained models to assess subjective attributes:
+   - `bleurt`: Learned metric for translation quality
+   - `comet`: Neural model for MT evaluation with human-like judgments
+   - `bertscore`: Semantic similarity using contextualized embeddings
+   - `mauve`: Text generation quality assessment
+
+2. **Custom judge models**: Users can load any pre-trained classifier or reward model as a judge through the `Evaluator` class, though they must implement the evaluation logic.
+
+**Not supported**: 
+- Native LLM-as-a-judge framework for prompting large language models to provide ratings
+- Pairwise comparison frameworks (requires Phase II-A-3 Arena Battle, which is not supported)
+- Built-in subjective evaluation workflows for attributes like helpfulness, harmlessness, or hallucination
+
+Users must implement custom logic to use LLMs (via API or local inference) as judges for subjective evaluation.
 
 #### ✅ **Strategy 4: Performance Measurement** - **SUPPORTED**
 The `Evaluator` class automatically computes performance metrics during evaluation:
@@ -274,22 +313,22 @@ The library does not provide automated regression detection, baseline comparison
 ### Supported Strategies by Phase
 
 **Phase 0: Provisioning**
-- ✅ 2 out of 8 strategies supported (25%)
+- ✅ 2 fully supported, ❌ 6 not supported (2/8 = 25%)
 
 **Phase I: Specification**
-- ✅ 4 out of 9 strategies supported (44%)
+- ✅ 4 fully supported, ⚠️ 1 partially supported, ❌ 4 not supported (4.5/9 = 50%)
 
 **Phase II: Execution**
-- ✅ 1 out of 4 strategies supported (25%)
+- ✅ 1 fully supported, ❌ 3 not supported (1/4 = 25%)
 
 **Phase III: Assessment**
-- ✅ 5 out of 6 strategies supported (83%)
+- ✅ 5 fully supported, ⚠️ 1 partially supported, ❌ 0 not supported (5.5/6 = 92%)
 
 **Phase IV: Reporting**
-- ❌ 0 out of 6 strategies supported (0%)
+- ❌ 6 not supported (0/6 = 0%)
 
 ### Overall Support
-**✅ 12 out of 33 total strategies supported (36%)**
+**✅ 13 out of 33 total strategies supported** (12 fully + 2 partially = 39% full support, 42% including partial support)
 
 ### Library Strengths
 
@@ -298,17 +337,19 @@ The `evaluate` library excels at:
 1. **Metric Computation**: Extensive collection of 50+ metrics covering deterministic, embedding-based, and performance measurements
 2. **Dataset Integration**: Seamless loading and preparation of benchmark datasets via HuggingFace Hub
 3. **Model Evaluation**: Native support for evaluating both local and remote models through transformers integration
-4. **Uncertainty Quantification**: Bootstrap-based confidence interval estimation
-5. **Easy Installation**: Simple PyPI-based installation with optional extras
+4. **Judge Model Support**: Can load and use pre-trained judge models through model-based metrics (BLEURT, COMET, BERTScore) and custom evaluators
+5. **Uncertainty Quantification**: Bootstrap-based confidence interval estimation
+6. **Easy Installation**: Simple PyPI-based installation with optional extras
 
 ### Library Limitations
 
-The library does not natively support:
+The library does not fully support:
 
 1. **Interactive Evaluation**: No support for RL environments, multi-agent scenarios, or stateful execution
 2. **Synthetic Data Generation**: No built-in data augmentation or perturbation
-3. **Subjective Evaluation**: No LLM-as-a-judge or model-based subjective scoring framework
-4. **Visualization & Reporting**: No charts, dashboards, or leaderboard integration
-5. **Production Monitoring**: No streaming, regression detection, or alerting
+3. **Comprehensive Subjective Evaluation**: Supports model-based judges but lacks LLM-as-a-judge framework and pairwise comparison workflows
+4. **Judge Fine-tuning**: Cannot fine-tune judge models—users must train externally and load pre-trained judges
+5. **Visualization & Reporting**: No charts, dashboards, or leaderboard integration
+6. **Production Monitoring**: No streaming, regression detection, or alerting
 
 The `evaluate` library is primarily designed as a **metric computation and batch evaluation framework** for standard ML/NLP tasks, with strong integration into the HuggingFace ecosystem.

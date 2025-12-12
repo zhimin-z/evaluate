@@ -259,7 +259,7 @@ The library does not provide native stratified analysis by demographic groups, d
 The library does not provide native visualization or chart generation capabilities. Users must use external libraries (matplotlib, plotly, etc.) for visualization.
 
 #### ❌ **Strategy 4: Dashboard Creation** - **NOT SUPPORTED**
-While the library provides Gradio integration for creating metric demos (`evaluate.utils.gradio`), it does not provide comprehensive dashboard creation for displaying evaluation results, metric comparisons, or ranked tables.
+The library provides Gradio integration for creating metric demos (`evaluate.utils.gradio`). However, it does not provide comprehensive dashboard capabilities for displaying evaluation results, metric comparisons, or ranked tables.
 
 #### ❌ **Strategy 5: Leaderboard Publication** - **NOT SUPPORTED**
 The library does not provide native leaderboard submission or publication capabilities.
